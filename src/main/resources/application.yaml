@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: flow-manager
+  kafka:
+    bootstrap-servers:
+    - "${KAFKA_URL}"
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  datasource:
+    url: "jdbc:postgresql://${DATABASE_URL}:5432/${DATABASE_NAME}"
+    username: "${DATABASE_USERNAME}"
+    password: "${DATABASE_PASSWORD}"
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    default-schema: public
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}
+
+queue:
+  kafka:
+    group-id: flow-manager-group
+    topic:
+      end-convert:
+        success: success-end-convert-topic
+        error: error-end-convert-topic
+      start-convert: file-convert
+
+s3:
+  buckets:
+    fileToConvertBN: "need-convert"
+    convertedFileBN: "converted"
+  properties:
+    endpointUrl: "http://${MINIO_URL}"
+    region: us-east-1
+    accessKey: minio
+    secretKey: minio123
+
