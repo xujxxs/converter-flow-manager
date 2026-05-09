@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.flow_manager.event.Producer;
 import com.example.flow_manager.exception.NotFoundException;
 import com.example.flow_manager.model.entity.ConvertedFile;
 import com.example.flow_manager.model.entity.FileToConvert;
@@ -25,6 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ConverterService {
 
+    @Value("${queue.kafka.topic.start-convert}")
+    private String START_CONVERT_TOPIC;
+
+    private final Producer producer;
     private final FileToConvertOutboxRepository fileToConvertOutboxRepository;
     private final FileToConvertRepository fileToConvertRepository;
 
@@ -50,13 +56,20 @@ public class ConverterService {
                     .uploadedAt(LocalDateTime.now())
                 .build());
 
-        fileToConvertOutboxRepository.save(
+        FileToConvertOutbox event = fileToConvertOutboxRepository.save(
             FileToConvertOutbox.builder()
                     .idempotentKey(file.getId().toString())
                     .payload(file.getFullPathS3())
                     .occurredAt(LocalDateTime.now())
                     .status(FileToConvertOutboxStatus.CREATED)
                 .build());
+        
+        producer.sendMessage(START_CONVERT_TOPIC, event.getIdempotentKey(), event.getPayload())
+            .thenRun(() -> {
+                event.setStatus(FileToConvertOutboxStatus.PROCESSED);
+                event.setProcessedAt(LocalDateTime.now());
+                fileToConvertOutboxRepository.save(event);
+            });
 
         return file.getId();
     }

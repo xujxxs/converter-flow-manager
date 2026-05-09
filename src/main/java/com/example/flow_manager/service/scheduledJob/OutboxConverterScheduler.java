@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OutboxConverterScheduler {
 
-
     @Value("${queue.kafka.topic.start-convert}")
     private String START_CONVERT_TOPIC;
 
