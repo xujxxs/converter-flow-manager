@@ -5,14 +5,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.example.flow_manager.event.Producer;
 import com.example.flow_manager.exception.NotFoundException;
 import com.example.flow_manager.model.entity.ConvertedFile;
 import com.example.flow_manager.model.entity.FileToConvert;
+import com.example.flow_manager.model.entity.FileToConvertOutbox;
 import com.example.flow_manager.model.enums.ConversionStatus;
+import com.example.flow_manager.model.enums.FileToConvertOutboxStatus;
+import com.example.flow_manager.repository.FileToConvertOutboxRepository;
 import com.example.flow_manager.repository.FileToConvertRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -23,9 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ConverterService {
 
-    @Value("${queue.kafka.topic.start-convert}")
-    private String START_CONVERT_TOPIC;
-    private final Producer producer;
+    private final FileToConvertOutboxRepository fileToConvertOutboxRepository;
     private final FileToConvertRepository fileToConvertRepository;
 
     public FileToConvert findById(Long fileId) {
@@ -41,6 +41,7 @@ public class ConverterService {
             .orElseThrow(() -> new NotFoundException("File not found")).getStatus();
     }
 
+    @Transactional
     public Long startConvert(String fileFullPath) {
         FileToConvert file = fileToConvertRepository.save(
             FileToConvert.builder()
@@ -48,11 +49,14 @@ public class ConverterService {
                     .status(ConversionStatus.IN_PROCESS)
                     .uploadedAt(LocalDateTime.now())
                 .build());
-        
-        producer.sendMessage(
-            START_CONVERT_TOPIC, 
-            file.getId().toString(), 
-            file.getFullPathS3());
+
+        fileToConvertOutboxRepository.save(
+            FileToConvertOutbox.builder()
+                    .idempotentKey(file.getId().toString())
+                    .payload(file.getFullPathS3())
+                    .occurredAt(LocalDateTime.now())
+                    .status(FileToConvertOutboxStatus.CREATED)
+                .build());
 
         return file.getId();
     }

@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/converter")
+@RequestMapping("/api/v1/converter")
 public class ConverterController {
 
     private final ConverterService converterService;
