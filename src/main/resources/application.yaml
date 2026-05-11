@@ -46,3 +46,6 @@ s3:
     accessKey: minio
     secretKey: minio123
 
+limits:
+  upload-file:
+    free: 10485760

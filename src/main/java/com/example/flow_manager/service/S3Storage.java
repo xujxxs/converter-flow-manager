@@ -2,13 +2,16 @@ package com.example.flow_manager.service;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.flow_manager.config.S3BucketProperties;
+import com.example.flow_manager.exception.FreeSubscriptionException;
 import com.example.flow_manager.exception.NotFoundException;
 import com.example.flow_manager.exception.S3Exception;
 import com.example.flow_manager.model.dto.SaveFileResponse;
+import com.example.flow_manager.request.SubscriptionRequest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 @RequiredArgsConstructor
 public class S3Storage {
 
+    @Value("${limits.upload-file.free}")
+    private Long fileSizeFree;
+    private final SubscriptionRequest subscriptionRequest;
     private final S3BucketProperties s3BucketProperties;
     private final ConverterService converterService;
     private final S3Client s3Client;
@@ -44,7 +50,10 @@ public class S3Storage {
         }
     }
 
-    public SaveFileResponse saveAndStartConvert(MultipartFile file) {
+    public SaveFileResponse saveAndStartConvert(String username, MultipartFile file) {
+        if(subscriptionRequest.getSubscription(username).replace("\"", "").equals("FREE") 
+            && file.getSize() > fileSizeFree) throw new FreeSubscriptionException();
+
         String fileFullPath = file.getOriginalFilename();
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(s3BucketProperties.getFileToConvertBN())
@@ -56,7 +65,7 @@ public class S3Storage {
             s3Client.putObject(request, body);
             log.info("File with key: {}, uploaded to S3 in bucket: {}", 
                 fileFullPath, s3BucketProperties.getFileToConvertBN());
-
+            
             Long fileId = converterService.startConvert(fileFullPath);
             return new SaveFileResponse(fileId, fileFullPath);
         } catch(IOException ex) {
