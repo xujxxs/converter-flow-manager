@@ -5,9 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.example.flow_manager.exception.FreeSubscriptionException;
 import com.example.flow_manager.exception.NotFoundException;
 import com.example.flow_manager.exception.S3Exception;
+import com.example.flow_manager.exception.SubscriptionException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -26,8 +26,8 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
-    @ExceptionHandler(FreeSubscriptionException.class)
-    public ResponseEntity<String> freeSubscriptionException(FreeSubscriptionException ex) {
+    @ExceptionHandler(SubscriptionException.class)
+    public ResponseEntity<String> subscriptionException(SubscriptionException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ex.getMessage());

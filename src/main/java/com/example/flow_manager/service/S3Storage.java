@@ -2,16 +2,15 @@ package com.example.flow_manager.service;
 
 import java.io.IOException;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.flow_manager.config.S3BucketProperties;
-import com.example.flow_manager.exception.FreeSubscriptionException;
 import com.example.flow_manager.exception.NotFoundException;
 import com.example.flow_manager.exception.S3Exception;
+import com.example.flow_manager.exception.SubscriptionException;
 import com.example.flow_manager.model.dto.SaveFileResponse;
-import com.example.flow_manager.request.SubscriptionRequest;
+import com.example.flow_manager.model.dto.SubscriptionTypeResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +25,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 @RequiredArgsConstructor
 public class S3Storage {
 
-    @Value("${limits.upload-file.free}")
-    private Long fileSizeFree;
-    private final SubscriptionRequest subscriptionRequest;
+    private final SubscriptionService subscriptionService;
     private final S3BucketProperties s3BucketProperties;
     private final ConverterService converterService;
     private final S3Client s3Client;
@@ -51,8 +48,11 @@ public class S3Storage {
     }
 
     public SaveFileResponse saveAndStartConvert(String username, MultipartFile file) {
-        if(subscriptionRequest.getSubscription(username).replace("\"", "").equals("FREE") 
-            && file.getSize() > fileSizeFree) throw new FreeSubscriptionException();
+
+        SubscriptionTypeResponse response = subscriptionService.getUserSubscription(username);
+        if(response.sizeFileCanBeUploaded() != 0 
+                && response.sizeFileCanBeUploaded() < file.getSize()) 
+            throw new SubscriptionException();
 
         String fileFullPath = file.getOriginalFilename();
         PutObjectRequest request = PutObjectRequest.builder()

@@ -20,6 +20,10 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  data:
+    redis: 
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
 
 eureka:
@@ -45,7 +49,3 @@ s3:
     region: us-east-1
     accessKey: minio
     secretKey: minio123
-
-limits:
-  upload-file:
-    free: 10485760
