@@ -35,6 +35,7 @@ queue:
   kafka:
     group-id: flow-manager-group
     topic:
+      subscription-del-cache: subscription-del-cache
       end-convert:
         success: success-end-convert-topic
         error: error-end-convert-topic

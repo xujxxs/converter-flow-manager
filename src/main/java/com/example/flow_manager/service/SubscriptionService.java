@@ -1,5 +1,6 @@
 package com.example.flow_manager.service;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -18,4 +19,7 @@ public class SubscriptionService {
     public SubscriptionTypeResponse getUserSubscription(String username) {
         return subscriptionClient.getSubscription(username);
     }
+
+    @CacheEvict(value = "type_subscription", key = "#username")
+    public void delFromCache(String username) { }
 }
