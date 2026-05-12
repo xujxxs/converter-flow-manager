@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.flow_manager.exception.NotFoundException;
 import com.example.flow_manager.exception.S3Exception;
+import com.example.flow_manager.exception.SubscriptionException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -23,5 +24,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .build();
+    }
+
+    @ExceptionHandler(SubscriptionException.class)
+    public ResponseEntity<String> subscriptionException(SubscriptionException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ex.getMessage());
     }
 }
